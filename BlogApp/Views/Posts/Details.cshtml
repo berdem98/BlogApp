@@ -1,0 +1,117 @@
+﻿@model Post
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="bg-white p-5">
+            <h1 class="h4 mb-4">@Model.Title</h1>
+            <div class="tag">
+                @foreach (var tag in Model.Tags)
+                {
+                    <a href="/posts/tag/@tag.Url" class="badge bg-@tag.Color bg-opacity-10 text-@tag.Color mb-2 fw-bold">@tag.Text</a>
+                }
+            </div>
+            <img src="~/img/@Model.Image" class="img-fluid rounded" />
+            <p class="mt-2">@Html.Raw(@Model.Content)</p>
+        </div>
+        <div class="bg-white mt-3">
+            <div class="card border-0">
+                <div class="card-header pb-0">
+                    <h4><span id="count">@Model.Comments.Count() adet yorum</span></h4>
+                </div>
+                <div class="card-body">
+                    <div id="comments">
+                        @foreach (var comment in Model.Comments)
+                        {
+                            <div class="my-4 d-flex">
+                                <img src="/img/@comment.User.Image" class="avatar rounded-circle float-start me-3" />
+                                <div>
+                                    <div class="mb-2">
+                                        <h6>@comment.User.UserName</h6>
+                                        <span>@comment.PublishedOn</span>
+                                    </div>
+                                    <p>@comment.Text</p>
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                    @if (User.Identity!.IsAuthenticated)
+                    {
+                        <hr class="my-4" />
+                        <div>
+                            <h4>Yorum Ekle</h4>
+                            <form action="/posts/AddComment" method="post">
+                                <input type="hidden" id="PostId" name="PostId" value="@Model.PostId" />
+                                <input type="hidden" name="Url" value="@Model.Url" />
+
+
+                                <div class="col-md-12">
+                                    <label for="text" class="form-label">Yorum</label>
+                                    <textarea name="Text" id="Text" class="form-control" rows="3" style="resize:none"></textarea>
+                                </div>
+                                <div class="col-md-12">
+                                    <button id="btnYorumKayit" type="submit" class="btn btn-primary mt-3">Kaydet</button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <h3>Yorum Yapmak İçin <span><a asp-controller="User" asp-action="Login" class="text-decoration-none">Buradan</a></span> Oturum Açınız!</h3>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <vc:tags-menu></vc:tags-menu>
+        <vc:new-posts></vc:new-posts>
+    </div>
+</div>
+
+
+@* AJAX *@
+@section Scripts2 {
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+
+        $(document).ready(function () {
+            $("#btnYorumKayit").click(function () {
+                $.ajax({
+                    type: 'POST',
+                    url: '@Url.Action("AddComment")',
+                    dataType: 'json',
+                    data: {
+                        PostId: $('#PostId').val(),
+                        UserName: $('#UserName').val(),
+                        Text: $('#Text').val()
+                    },
+                    success: function (yorum) {
+                        var tarih = new Date(yorum.publishedOn)
+                        $('#comments').append(`
+                                                <div class="my-4 d-flex">
+                                                        <img src="/img/${yorum.avatar}" class="avatar rounded-circle float-start me-3" />
+                                                        <div>
+                                                            <div class="mb-2">
+                                                                <h6>${yorum.userName}</h6>
+                                                                <span>${tarih.toLocaleString()}</span>
+                                                            </div>
+                                                            <p>${yorum.text}</p>
+                                                        </div>
+
+                                                    </div>
+                                        `);
+                        $("#UserName").val('');
+                        $("#Text").val('');
+                        var adet = parseInt($("#count").text());
+                        $("#count").text(adet + 1 + " adet Yorum");
+
+                    }
+                });
+                return false;
+            });
+        });
+
+    </script>
+}
